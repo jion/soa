@@ -28,6 +28,20 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+int login(int sockfd, char* user, char* pass) {
+	int ret, numbytes;
+	char buf[5];
+	
+	send(sockfd, user, sizeof user, 0);
+	send(sockfd, pass, sizeof pass, 0);
+	shutdown(sockfd, SHUT_WR);
+	numbytes = recv(sockfd, buf, 4, 0);
+	buf[numbytes] = '\0';
+	sscanf(buf, "%d", &ret);
+	
+	return ret;
+}
+
 int main(int argc, char *argv[])
 {
 	int sockfd, numbytes;  
