@@ -165,6 +165,7 @@ void servir(int thread_fd, const char* s) {
 	printf("Password: %s\n",pass);
 	printf("\n%d: %s\n", code, msg_respuesta[code+2]);
 	printf("----------------------------------------\n\n");
+	
 	close(thread_fd);
 	
 }

@@ -16,9 +16,15 @@
 #include <arpa/inet.h>
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
+
 #define INCORRECT_USER		-1
 #define INCORRECT_PASS		-2
 #define AUTHENTICATION_OK	 0
+#define INCORRECT_USER_MSG	"Usuario Inexistente."
+#define INCORRECT_PASS_MSG	"Password Erronea."
+#define AUTHENTICATION_OK_MSG	"Autenticacion OK."
+
+const char msg_respuesta[3][50] = { INCORRECT_PASS_MSG, INCORRECT_USER_MSG, AUTHENTICATION_OK_MSG };
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -61,7 +67,7 @@ int login(int sockfd, const char* user, const char* pass) {
 
 int main(int argc, char *argv[])
 {
-	int sockfd, numbytes;  
+	int sockfd, numbytes, code;  
 	char buf[MAXDATASIZE];
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
@@ -103,32 +109,22 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 
-	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
-			s, sizeof s);
-	printf("client: connecting to %s\n", s);
+
 
 	freeaddrinfo(servinfo); // all done with this structure
 
-	switch( login(sockfd, argv[3], argv[4]) ) {
-		case 0:
-			printf("Autenticación OK\n");
-			break;
-		case -1:
-			printf("Usuario Inexistente\n");
-			break;
-		case -2:
-			printf("Password Erronea\n");
-			break;
-	}
-
-//	if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-//	    perror("recv");
-//	    exit(1);
-//	}
-//
-//	buf[numbytes] = '\0';
-
-//	printf("client: received '%s'\n",buf);
+	// Llamo a la funcion que realiza el login
+	code = login(sockfd, argv[3], argv[4]);
+	
+	// Imprimo el resultado del login por pantalla
+	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
+		s, sizeof s);
+	printf("----------------------------------------\n");
+	printf("Server: %s\n",s); 
+	printf("Usuario:  %s\n",argv[3]);
+	printf("Password: %s\n",argv[4]);
+	printf("\n%d: %s\n", code, msg_respuesta[code+2]);
+	printf("----------------------------------------\n\n");
 
 	close(sockfd);
 
