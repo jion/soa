@@ -72,7 +72,7 @@ void obtener(int sockfd, char* user, char* pass) {
 		if(i < numbytes) { // Encontramos un '\n' my friend!
 			*s='\0'; // Finalizamos la cadena
 			/* Si existe, quitamos el caracter tabulador */
-			if(s>d[j] && *(s-1) == '\r') *(s-1) == '\0';
+			if(s>d[j] && *(s-1) == '\r') *(s-1) = '\0';
 			
 			j++; /* Pasamos al siguiente "nivel" (pass) */
 			s=d[j];
