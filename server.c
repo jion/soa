@@ -41,10 +41,40 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+int login(const char* user, const char* pass) {
+	int ret= INCORRECT_USER;
+	FILE* fd_auth = fopen("userauth", "r");
+	char  buffer[1024];
+	char* fuser;
+	char* fpass;
+	
+	memset(buffer, 0, sizeof(buffer));
+	while ( fgets ( buffer, sizeof buffer, fd_auth ) != NULL ) /* read a line */
+	{
+		fuser = strtok(buffer, ";");
+		fpass = strtok(NULL, "\n");
+		
+		if(strcmp(user,fuser)!=0) {
+			continue;
+		}
+		if(strcmp(pass,fpass)!=0) {
+			ret= INCORRECT_PASS;
+			break;
+		}
+		
+		ret= AUTHENTICATION_OK;
+		break;	
+		
+	}
+	fclose ( fd_auth );
+	
+	return ret;
+}
+
+
 /* Esta funcion atiende cada cliente que establece una conexion con nuestro
  * servidor.
  */
- 
 void obtener(int sockfd, char* user, char* pass) {
 	char buffer[LENGTH_BUFFER];
 	char* d[2] = { user, pass };
@@ -90,9 +120,10 @@ void servir(int thread_fd) {
 	
 	obtener(thread_fd, user, pass);
 	
-	printf("DEBUG: Resultado del parse: %s, %s", user, pass);
-	exit(0);
-	//ret = login(user, pass);
+	// printf("DEBUG: Resultado del parse: %s, %s", user, pass);
+	// exit(0);
+	
+	ret = login(user, pass);
 
 	// Devolver el valor que corresponda
 	switch(ret) {
