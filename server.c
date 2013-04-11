@@ -26,7 +26,7 @@
 #define INCORRECT_PASS_MSG	"Password Erronea."
 #define AUTHENTICATION_OK_MSG	"Autenticacion OK."
 
-const char msg_respuesta[3][50] = { INCORRECT_USER_MSG, INCORRECT_PASS_MSG, AUTHENTICATION_OK_MSG };
+const char msg_respuesta[3][50] = { INCORRECT_PASS_MSG, INCORRECT_USER_MSG, AUTHENTICATION_OK_MSG };
 
 void sigchld_handler(int s)
 {
