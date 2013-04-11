@@ -34,7 +34,14 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int main(void)
+/* Esta funcion atiende cada cliente que establece una conexion con nuestro
+ * servidor.
+ */
+void servir(int thread_fd) {
+	//TODO: Funcion ejecutada por cada proceso hijo
+}
+
+int main(int argc, char *argv[])
 {
 	int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
 	struct addrinfo hints, *servinfo, *p;
@@ -45,12 +52,20 @@ int main(void)
 	char s[INET6_ADDRSTRLEN];
 	int rv;
 
+	/** Manejo de argumentos **********************************************/
+	if(argc != 2)
+	{
+		perror("server: parametros incorrectos");
+			exit(1);
+	}
+
+	/** Conexion **********************************************************/
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE; // use my IP
 
-	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
+	if ((rv = getaddrinfo(NULL, argv[1], &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
@@ -115,8 +130,7 @@ int main(void)
 
 		if (!fork()) { // this is the child process
 			close(sockfd); // child doesn't need the listener
-			if (send(new_fd, "Hello, world!", 13, 0) == -1)
-				perror("send");
+			servir(new_fd);
 			close(new_fd);
 			exit(0);
 		}
