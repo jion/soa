@@ -15,9 +15,16 @@
 #include <sys/wait.h>
 #include <signal.h>
 
-#define PORT "3490"  // the port users will be connecting to
-
 #define BACKLOG 10	 // how many pending connections queue will hold
+#define LENGTH_BUFFER	100
+#define MAX_LENGTH_USER		20
+#define MAX_LENGTH_PASS		20
+#define INCORRECT_USER		-1
+#define INCORRECT_PASS		-2
+#define AUTHENTICATION_OK	 0
+#define INCORRECT_USER_MSG	"Usuario Inexistente."
+#define INCORRECT_PASS_MSG	"Password Erronea."
+#define AUTHENTICATION_OK_MSG	"Autenticacion OK."
 
 void sigchld_handler(int s)
 {
@@ -37,8 +44,89 @@ void *get_in_addr(struct sockaddr *sa)
 /* Esta funcion atiende cada cliente que establece una conexion con nuestro
  * servidor.
  */
+ 
+void obtener(int sockfd, char* user, char* pass) {
+	char buffer[LENGTH_BUFFER];
+	char* d[2] = { user, pass };
+	char* s; // Apunta a la siguiente caracter a completar de { user, pass }
+	int i, j, numbytes, isParse;
+	
+	j=0;
+	s= d[j];
+	numbytes=1; // Enganio para saltear la primera comprobacion
+	isParse=0;
+	while(!isParse) {
+		if(numbytes == 0) {
+			perror("Oh my God! An error!");
+		}
+		numbytes = recv(sockfd, buffer,LENGTH_BUFFER,0);
+		if(numbytes < 1) {
+			perror("server: receive");
+		}
+
+		for(i=0; i < numbytes && buffer[i] != '\n'; i++) {
+			*s=buffer[i];
+			s++; // Posicionamos el puntero en la siguiente posicion
+		}
+
+		if(i < numbytes) { // Encontramos un '\n' my friend!
+			*s='\0'; // Finalizamos la cadena
+			/* Si existe, quitamos el caracter tabulador */
+			if(s>d[j] && *(s-1) == '\r') *(s-1) == '\0';
+			
+			j++; /* Pasamos al siguiente "nivel" (pass) */
+			s=d[j];
+		}
+		if(j>1) isParse=1;
+	}
+}
+
 void servir(int thread_fd) {
-	//TODO: Funcion ejecutada por cada proceso hijo
+	char user[MAX_LENGTH_USER];
+	char pass[MAX_LENGTH_PASS];
+	char msg[50];
+	int numbytes;
+	int ret;
+	
+	obtener(thread_fd, user, pass);
+	
+	printf("DEBUG: Resultado del parse: %s, %s", user, pass);
+	exit(0);
+	//ret = login(user, pass);
+
+	// Devolver el valor que corresponda
+	switch(ret) {
+		case  AUTHENTICATION_OK:
+			if (send(thread_fd, "0", 2, 0) == -1) {
+				perror("send");
+				sprintf(msg,"No fue posible comunicarse con el cliente");
+				break;
+			}
+			sprintf(msg,"Autenticacion OK");
+			break;
+		case INCORRECT_USER:
+			if (send(thread_fd, "-1", 3, 0) == -1) {
+				perror("send");
+				sprintf(msg,"No fue posible comunicarse con el cliente");
+				break;
+			}
+			sprintf(msg,"Usuario Inexistente");
+			break;
+		case INCORRECT_PASS:
+			if (send(thread_fd, "-2", 3, 0) == -1) {
+				perror("send");
+				sprintf(msg,"No fue posible comunicarse con el cliente");
+				break;
+			}
+			sprintf(msg,"Password Erronea");
+			break;
+	}
+	
+	close(thread_fd);
+	
+	printf("Usuario:  %s\n",user);
+	printf("Password: %s\n",pass);
+	printf("\n%d: %s\n",ret,msg);
 }
 
 int main(int argc, char *argv[])
