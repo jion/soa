@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <errno.h>
 #include <string.h>
 #include <netdb.h>
@@ -14,9 +15,10 @@
 
 #include <arpa/inet.h>
 
-#define PORT "3490" // the port client will be connecting to 
-
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
+#define INCORRECT_USER		-1
+#define INCORRECT_PASS		-2
+#define AUTHENTICATION_OK	 0
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -28,16 +30,31 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int login(int sockfd, char* user, char* pass) {
+int login(int sockfd, const char* user, const char* pass) {
 	int ret, numbytes;
-	char buf[5];
-	
-	send(sockfd, user, sizeof user, 0);
-	send(sockfd, pass, sizeof pass, 0);
-	shutdown(sockfd, SHUT_WR);
-	numbytes = recv(sockfd, buf, 4, 0);
-	buf[numbytes] = '\0';
-	sscanf(buf, "%d", &ret);
+	char buffer[MAXDATASIZE];
+
+	/* Solicitamos la autenticacion */
+	sprintf(buffer, "%s\r\n", user);
+	send(sockfd, buffer, strlen(buffer), 0);
+	sprintf(buffer, "%s\r\n", pass);
+	send(sockfd, buffer, strlen(buffer), 0);
+//	shutdown(sockfd, SHUT_WR); // TODO: No existe flush! Entonces... no hay
+				   // otra manera de solucionar esto sin tener
+				   // que cerrar el socket? (y sin quitar nagle!)
+
+	/* Procesamos la respuesta */
+	numbytes = recv(sockfd, buffer, MAXDATASIZE, 0);
+	if(numbytes == -1) {
+		perror("Oh my God 1!! This is an error!");
+		exit(1);
+	}
+	buffer[numbytes] = '\0';    // A~adimos fin de cadena por seguridad
+	sscanf(buffer, "%d", &ret); // Aca obtenemos el numero
+	if(ret < -2 || ret > 0) {
+		perror("Oh my God 2!! This is an error!");
+		exit(1);
+	}
 	
 	return ret;
 }
@@ -59,7 +76,7 @@ int main(int argc, char *argv[])
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if ((rv = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0) {
+	if ((rv = getaddrinfo(argv[1], argv[2], &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
