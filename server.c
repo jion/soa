@@ -138,7 +138,7 @@ void obtener(int sockfd, char* user, char* pass) {
  * Esta funcion atiende a cada cliente que establece una conexion con nuestro
  * servidor.
  */
-void servir(int thread_fd) {
+void servir(int thread_fd, const char* s) {
 	char user[MAX_LENGTH_USER];
 	char pass[MAX_LENGTH_PASS];
 	char scode[4];
@@ -159,37 +159,12 @@ void servir(int thread_fd) {
 		exit(1);
 	}
 	
+	printf("----------------------------------------\n");
+	printf("Host: %s\n",s); 
 	printf("Usuario:  %s\n",user);
 	printf("Password: %s\n",pass);
 	printf("\n%d: %s\n", code, msg_respuesta[code+2]);
-	
-/*	switch(ret) {
-		case  AUTHENTICATION_OK:
-			if (send(thread_fd, "0", 2, 0) == -1) {
-				perror("send");
-				sprintf(msg,"No fue posible comunicarse con el cliente");
-				break;
-			}
-			sprintf(msg,"Autenticacion OK");
-			break;
-		case INCORRECT_USER:
-			if (send(thread_fd, "-1", 3, 0) == -1) {
-				perror("send");
-				sprintf(msg,"No fue posible comunicarse con el cliente");
-				break;
-			}
-			sprintf(msg,"Usuario Inexistente");
-			break;
-		case INCORRECT_PASS:
-			if (send(thread_fd, "-2", 3, 0) == -1) {
-				perror("send");
-				sprintf(msg,"No fue posible comunicarse con el cliente");
-				break;
-			}
-			sprintf(msg,"Password Erronea");
-			break;
-	}
-*/	
+	printf("----------------------------------------\n\n");
 	close(thread_fd);
 	
 }
@@ -266,7 +241,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	printf("server: waiting for connections...\n");
+	printf("server: esperando conexiones...\n");
 
 	while(1) {  // main accept() loop
 		sin_size = sizeof their_addr;
@@ -279,11 +254,11 @@ int main(int argc, char *argv[])
 		inet_ntop(their_addr.ss_family,
 			get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s);
-		printf("server: got connection from %s\n", s);
+		printf("server: obtenida conexion desde: %s\n", s);
 
 		if (!fork()) { // this is the child process
 			close(sockfd); // child doesn't need the listener
-			servir(new_fd);
+			servir(new_fd, s);
 			close(new_fd);
 			exit(0);
 		}
