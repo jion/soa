@@ -50,8 +50,8 @@ int main(int argc, char *argv[])
 	int rv;
 	char s[INET6_ADDRSTRLEN];
 
-	if (argc != 2) {
-	    fprintf(stderr,"usage: client hostname\n");
+	if (argc != 5) {
+	    fprintf(stderr,"usage: %s <IPserver> <puerto> <user> <passwd>\n",argv[0]);
 	    exit(1);
 	}
 
@@ -92,14 +92,26 @@ int main(int argc, char *argv[])
 
 	freeaddrinfo(servinfo); // all done with this structure
 
-	if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	    perror("recv");
-	    exit(1);
+	switch( login(sockfd, argv[3], argv[4]) ) {
+		case 0:
+			printf("Autenticación OK\n");
+			break;
+		case -1:
+			printf("Usuario Inexistente\n");
+			break;
+		case -2:
+			printf("Password Erronea\n");
+			break;
 	}
 
-	buf[numbytes] = '\0';
+//	if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+//	    perror("recv");
+//	    exit(1);
+//	}
+//
+//	buf[numbytes] = '\0';
 
-	printf("client: received '%s'\n",buf);
+//	printf("client: received '%s'\n",buf);
 
 	close(sockfd);
 
