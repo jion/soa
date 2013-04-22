@@ -15,18 +15,26 @@
 #include <sys/wait.h>
 #include <signal.h>
 
+// Constantes
 #define BACKLOG 10	 // how many pending connections queue will hold
-#define LENGTH_BUFFER	100
+#define BUFFER_LENGTH	100
+
 #define MAX_LENGTH_USER		20
 #define MAX_LENGTH_PASS		20
 #define INCORRECT_USER		-1
 #define INCORRECT_PASS		-2
 #define AUTHENTICATION_OK	 0
-#define INCORRECT_USER_MSG	"Usuario Inexistente."
-#define INCORRECT_PASS_MSG	"Password Erronea."
+
+#define INCORRECT_USER_MSG		"Usuario Inexistente."
+#define INCORRECT_PASS_MSG		"Password Erronea."
 #define AUTHENTICATION_OK_MSG	"Autenticacion OK."
 
+#define AUTH_FILE	"userauth"
+
 const char msg_respuesta[3][50] = { INCORRECT_PASS_MSG, INCORRECT_USER_MSG, AUTHENTICATION_OK_MSG };
+
+// Variables globales
+char  buffer[BUFFER_LENGTH];
 
 void sigchld_handler(int s)
 {
@@ -54,12 +62,23 @@ void *get_in_addr(struct sockaddr *sa)
  *     proceso de autenticacion.
  */
 int login(const char* user, const char* pass) {
-	int ret= INCORRECT_USER;
-	FILE* fd_auth = fopen("userauth", "r");
-	char  buffer[1024];
+	int ret;
+	FILE* fd_auth;
 	char* fuser;
 	char* fpass;
 	
+	fd_auth = fopen(AUTH_FILE, "r");
+	if(fd_auth == NULL) {
+		printf( "Error abriendo archivo \"%s\": %s\n", AUTH_FILE,
+			strerror( errno ) );
+			
+		return INCORRECT_USER;
+	}
+	
+	/* Se lee el archivo de claves y se comprueba que coincida alguna
+	 * entrada del mismo con el usuario y contrase;a proporcionados
+	 * */
+	ret= INCORRECT_USER;
 	memset(buffer, 0, sizeof(buffer));
 	while ( fgets ( buffer, sizeof buffer, fd_auth ) != NULL )
 	{
@@ -89,7 +108,6 @@ int login(const char* user, const char* pass) {
  * cliente.
  */
 void obtener(int sockfd, char* user, char* pass) {
-	char buffer[LENGTH_BUFFER];
 	char* d[2] = { user, pass }; // Apunta a la variable a completar
 	char* s; // Apunta a la siguiente caracter a completar de { user, pass }
 	int i, j, numbytes, isParse;
@@ -104,7 +122,7 @@ void obtener(int sockfd, char* user, char* pass) {
 			exit(1);
 		}
 
-		numbytes = recv(sockfd, buffer,LENGTH_BUFFER,0); // RECV!
+		numbytes = recv(sockfd, buffer,BUFFER_LENGTH,0); // RECV!
 		if(numbytes < 1) {
 			perror("server (receive)");
 			exit(1);
@@ -135,21 +153,18 @@ void obtener(int sockfd, char* user, char* pass) {
 }
 
 /* 
- * Esta funcion atiende a cada cliente que establece una conexion con nuestro
- * servidor.
+ * Esta funcion atiende a cada cliente que establece una conexion con
+ * nuestro servidor.
  */
 void servir(int thread_fd, const char* s) {
 	char user[MAX_LENGTH_USER];
 	char pass[MAX_LENGTH_PASS];
 	char scode[4];
-	int numbytes;
 	int code;
 	
+	/* Obtengo las credenciales pasadas por la red y realizo la
+	 * autenticacion */
 	obtener(thread_fd, user, pass);
-	
-//	printf("DEBUG: Resultado del parse: *%s*, *%s*", user, pass);
-//	exit(0);
-	
 	code = login(user, pass);
 
 	// Devolver el valor que corresponda
@@ -166,6 +181,14 @@ void servir(int thread_fd, const char* s) {
 	printf("\n%d: %s\n", code, msg_respuesta[code+2]);
 	printf("----------------------------------------\n\n");
 	
+	/* ------------------------------------------------------------
+	 * Aqui se deberia prestar el supuesto servicio  en caso de que
+	 * el usuario se haya autenticado correctamente
+	 * ------------------------------------------------------------
+	 */
+	 
+	/* Una vez prestado el servicio, se cierra la conexion con el
+	 * cliente */
 	close(thread_fd);
 	
 }
@@ -257,13 +280,13 @@ int main(int argc, char *argv[])
 			s, sizeof s);
 		printf("server: obtenida conexion desde: %s\n", s);
 
-		if (!fork()) { // this is the child process
-			close(sockfd); // child doesn't need the listener
+		if (!fork()) { // COMIENZO DEL PROCESO HIJO
+			close(sockfd); // el hijo no necesita el listener
 			servir(new_fd, s);
 			close(new_fd);
 			exit(0);
-		}
-		close(new_fd);  // parent doesn't need this
+		} // FIN PROCESO HIJO
+		close(new_fd); // el padre no necesita esto
 	}
 
 	return 0;
