@@ -20,11 +20,12 @@
 #define INCORRECT_USER		-1
 #define INCORRECT_PASS		-2
 #define AUTHENTICATION_OK	 0
-#define INCORRECT_USER_MSG	"Usuario Inexistente."
-#define INCORRECT_PASS_MSG	"Password Erronea."
+#define INCORRECT_USER_MSG		"Usuario Inexistente."
+#define INCORRECT_PASS_MSG		"Password Erronea."
 #define AUTHENTICATION_OK_MSG	"Autenticacion OK."
 
-const char msg_respuesta[3][50] = { INCORRECT_PASS_MSG, INCORRECT_USER_MSG, AUTHENTICATION_OK_MSG };
+const char msg_respuesta[3][50] =
+	{ INCORRECT_PASS_MSG, INCORRECT_USER_MSG, AUTHENTICATION_OK_MSG };
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -35,30 +36,30 @@ void *get_in_addr(struct sockaddr *sa)
 
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
-
+/*
+ * Esta funcion envia un par user-password al servidor y espera por una
+ * respuesta. Devuelve el codigo devuelto por el servidor.
+ * */
 int login(int sockfd, const char* user, const char* pass) {
 	int ret, numbytes;
 	char buffer[MAXDATASIZE];
 
-	/* Solicitamos la autenticacion */
+	/* Solicitamos la autenticacion al servidor */
 	sprintf(buffer, "%s\r\n", user);
 	send(sockfd, buffer, strlen(buffer), 0);
 	sprintf(buffer, "%s\r\n", pass);
 	send(sockfd, buffer, strlen(buffer), 0);
-//	shutdown(sockfd, SHUT_WR); // TODO: No existe flush! Entonces... no hay
-				   // otra manera de solucionar esto sin tener
-				   // que cerrar el socket? (y sin quitar nagle!)
 
 	/* Procesamos la respuesta */
 	numbytes = recv(sockfd, buffer, MAXDATASIZE, 0);
 	if(numbytes == -1) {
-		perror("Oh my God 1!! This is an error!");
+		perror("error: receive");
 		exit(1);
 	}
 	buffer[numbytes] = '\0';    // A~adimos fin de cadena por seguridad
-	sscanf(buffer, "%d", &ret); // Aca obtenemos el numero
+	sscanf(buffer, "%d", &ret); // Obtenemos el codigo
 	if(ret < -2 || ret > 0) {
-		perror("Oh my God 2!! This is an error!");
+		perror("error: el servidor devolvio un codigo desconocido");
 		exit(1);
 	}
 	
@@ -67,17 +68,19 @@ int login(int sockfd, const char* user, const char* pass) {
 
 int main(int argc, char *argv[])
 {
-	int sockfd, numbytes, code;  
-	char buf[MAXDATASIZE];
+	int sockfd, code;
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
 
+	/* Comprobacion de argumentos */
 	if (argc != 5) {
-	    fprintf(stderr,"usage: %s <IPserver> <puerto> <user> <passwd>\n",argv[0]);
+	    fprintf(stderr,
+			"usage: %s <IPserver> <puerto> <user> <passwd>\n",argv[0]);
 	    exit(1);
 	}
 
+	/* Conexion al servidor */
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
@@ -87,7 +90,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	// loop through all the results and connect to the first we can
+	// Recorre la lista de resultados e intenta conectarse a alguno
 	for(p = servinfo; p != NULL; p = p->ai_next) {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype,
 				p->ai_protocol)) == -1) {
@@ -108,8 +111,6 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "client: failed to connect\n");
 		return 2;
 	}
-
-
 
 	freeaddrinfo(servinfo); // all done with this structure
 
