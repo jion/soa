@@ -15,5 +15,5 @@ all: $(TARGETS)
 clean:
 	rm -f $(TARGETS)
 
-obj/%: src/%.c
+obj/%: %.c
 	$(CC) $(CCOPTS) -o $@ $<
