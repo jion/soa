@@ -103,34 +103,34 @@ void obtener(int sockfd, char* user, char* pass) {
 			perror("server: Faltan datos de conexion");
 			exit(1);
 		}
+
 		numbytes = recv(sockfd, buffer,LENGTH_BUFFER,0); // RECV!
 		if(numbytes < 1) {
 			perror("server (receive)");
 			exit(1);
 		}
-		
+
 		/* Se copia la cadena de caracteres desde el buffer a la variable
 		 * correspondiente apuntada por d (user o pass).
 		 */
-		for(i=0; i < numbytes && buffer[i] != '\n'; i++) {
+		for(i=0; !isParse && i < numbytes; i++) {
 			*s=buffer[i];
-			s++; // Posicionamos el puntero en la siguiente posicion
-		}
-
-		/* Cuando termina de copiar lo que hay en buffer, verifica si
-		 * ya se envio la cadena completa para la variable actual
-		 * (user o pass). Si es asi, cierra la cadena en la variable
-		 * correspondiente y se pone a trabajar en la siguiente.
-		 */
-		if(i < numbytes) { // Encontramos un '\n' my friend!
-			*s='\0'; // Finalizamos la cadena
-			/* Si existe, quitamos el caracter tabulador */
-			if(s>d[j] && *(s-1) == '\r') *(s-1) = '\0';
+		
+			/* Cuando termina de copiar lo que hay en buffer, verifica si
+			 * ya se envio la cadena completa para la variable actual
+			 * (user o pass). Si es asi, cierra la cadena en la variable
+			 * correspondiente y se pone a trabajar en la siguiente.
+			 */
+			if(*s=='\n') { // Encontramos un '\n' my friend!
+				*s='\0'; // Finalizamos la cadena
+					/* Si existe, quitamos el caracter tabulador */
+				if(s>d[j] && *(s-1) == '\r') *(s-1) = '\0';
 			
-			j++; /* Pasamos al siguiente "nivel" (pass) */
-			s=d[j];
+				j++; /* Pasamos al siguiente "nivel" (pass) */
+				s=d[j];
+			} else { s++; }
+			if(j>1) isParse=1; // Si ya procesamos las dos var, fin.
 		}
-		if(j>1) isParse=1; // Si ya procesamos las dos var, fin.
 	}
 }
 
