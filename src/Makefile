@@ -1,4 +1,4 @@
-TARGETS=obj/client obj/server
+TARGETS=../obj/client ../obj/server
 
 # Opciones del compilador
 CC=gcc
@@ -15,5 +15,5 @@ all: $(TARGETS)
 clean:
 	rm -f $(TARGETS)
 
-obj/%: %.c
+../obj/%: %.c
 	$(CC) $(CCOPTS) -o $@ $<

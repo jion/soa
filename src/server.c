@@ -29,7 +29,7 @@
 #define INCORRECT_PASS_MSG		"Password Erronea."
 #define AUTHENTICATION_OK_MSG	"Autenticacion OK."
 
-#define AUTH_FILE	"userauth"
+#define AUTH_FILE	"/etc/userauth"
 
 const char msg_respuesta[3][50] = { INCORRECT_PASS_MSG, INCORRECT_USER_MSG, AUTHENTICATION_OK_MSG };
 
